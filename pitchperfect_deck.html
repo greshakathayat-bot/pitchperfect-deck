@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IBM PitchPerfect</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; background: #000; color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+.deck { flex: 1; position: relative; overflow: hidden; }
+.slide { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 56px 72px 40px; opacity: 0; pointer-events: none; transition: opacity 0.35s ease; }
+.slide.active { opacity: 1; pointer-events: all; }
+.navbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 32px; border-top: 1px solid #1a1a1a; background: #000; flex-shrink: 0; }
+.nav-brand { font-size: 12px; font-weight: 700; color: #4a90d9; letter-spacing: 0.08em; }
+.nav-dots { display: flex; gap: 8px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #333; cursor: pointer; transition: background 0.2s; border: none; }
+.dot.active { background: #4a90d9; }
+.nav-controls { display: flex; align-items: center; gap: 10px; }
+.nav-btn { background: #1c1c1c; border: 1px solid #2a2a2a; color: #fff; width: 34px; height: 34px; border-radius: 50%; font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.nav-btn:hover { background: #2a2a2a; }
+.nav-btn:disabled { opacity: 0.25; cursor: default; }
+.nav-counter { font-size: 12px; color: #555; min-width: 44px; text-align: center; }
+.bob { text-align: center; font-size: 10px; color: #222; padding: 5px 0; border-top: 1px solid #111; flex-shrink: 0; }
+
+/* typography */
+.slide-label { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #4a90d9; margin-bottom: 16px; text-align: center; }
+.slide-title { font-size: 52px; font-weight: 300; line-height: 1.1; text-align: center; color: #fff; letter-spacing: -0.02em; margin-bottom: 12px; }
+.slide-title strong { font-weight: 700; }
+.slide-footer { position: absolute; bottom: 14px; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 72px; font-size: 10px; color: #333; }
+
+/* cover */
+.cover-wrap { text-align: center; max-width: 700px; }
+.cover-badge { display: inline-block; background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 20px; padding: 6px 18px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #4a90d9; text-transform: uppercase; margin-bottom: 28px; }
+.cover-title { font-size: 68px; font-weight: 700; color: #fff; line-height: 1.0; letter-spacing: -0.03em; margin-bottom: 16px; }
+.cover-sub { font-size: 20px; font-weight: 300; color: #666; margin-bottom: 32px; }
+.cover-team { font-size: 12px; color: #444; letter-spacing: 0.06em; }
+
+/* quote */
+.quote-card { background: #111; border: 1px solid #222; border-radius: 20px; padding: 48px 56px; max-width: 760px; text-align: center; }
+.quote-text { font-size: 26px; font-weight: 300; color: #fff; line-height: 1.5; font-style: italic; }
+.quote-attr { font-size: 13px; color: #4a90d9; margin-top: 20px; font-weight: 600; letter-spacing: 0.06em; }
+
+/* big stat */
+.big-stat { font-size: 120px; font-weight: 700; color: #fff; line-height: 1; letter-spacing: -0.04em; text-align: center; }
+.stat-label-text { font-size: 22px; font-weight: 300; color: #888; text-align: center; margin-top: 12px; max-width: 500px; }
+
+/* problem */
+.problem-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; width: 100%; max-width: 980px; align-items: start; }
+.problem-card { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 16px; padding: 28px 24px; }
+.problem-card-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #4a90d9; margin-bottom: 14px; }
+.problem-card p { font-size: 13px; color: #aaa; line-height: 1.7; margin-bottom: 10px; }
+.problem-card p:last-child { margin-bottom: 0; }
+.problem-card p span { color: #fff; font-weight: 500; }
+.isc-note { margin-top: 14px; background: #1a160a; border: 1px solid #3a2e00; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #d4a800; display: flex; align-items: center; gap: 8px; }
+.stats-col { display: flex; flex-direction: column; }
+.stat-row { display: flex; align-items: baseline; gap: 16px; padding: 18px 0; border-bottom: 1px solid #222; }
+.stat-row:first-child { padding-top: 0; }
+.stat-row:last-child { border-bottom: none; padding-bottom: 0; }
+.stat-num { font-size: 34px; font-weight: 700; color: #4a90d9; min-width: 72px; line-height: 1; }
+.stat-desc { font-size: 13px; color: #888; line-height: 1.5; }
+
+/* pillars */
+.pillars-grid { display: flex; gap: 20px; width: 100%; max-width: 960px; }
+.pillar { flex: 1; background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 16px; padding: 32px 24px; }
+.pillar-num { font-size: 13px; font-weight: 700; color: #4a90d9; letter-spacing: 0.08em; margin-bottom: 8px; }
+.pillar-title { font-size: 24px; font-weight: 600; color: #fff; margin-bottom: 12px; }
+.pillar-desc { font-size: 13px; color: #777; line-height: 1.65; }
+
+/* golden standard */
+.golden-wrap { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; width: 100%; max-width: 980px; align-items: center; }
+.gtitle { font-size: 36px; font-weight: 300; color: #fff; line-height: 1.2; margin-bottom: 14px; letter-spacing: -0.02em; }
+.gtitle strong { font-weight: 700; color: #4a90d9; }
+.gdesc { font-size: 14px; color: #777; line-height: 1.7; }
+.golden-steps { display: flex; flex-direction: column; gap: 10px; }
+.gstep { background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 12px; padding: 14px 18px; display: flex; align-items: flex-start; gap: 14px; }
+.gstep-num { font-size: 11px; font-weight: 700; color: #4a90d9; min-width: 22px; margin-top: 2px; }
+.gstep-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+.gstep-desc { font-size: 11px; color: #555; line-height: 1.4; }
+
+/* rubric */
+.rubric-grid { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 860px; }
+.rubric-row { display: flex; align-items: center; gap: 20px; background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 12px; padding: 16px 22px; }
+.rubric-weight { font-size: 22px; font-weight: 700; color: #4a90d9; min-width: 52px; }
+.rubric-name { font-size: 14px; font-weight: 600; color: #fff; min-width: 190px; }
+.rubric-desc { font-size: 12px; color: #666; line-height: 1.5; flex: 1; }
+
+/* ask */
+.ask-items { display: flex; flex-direction: column; gap: 14px; margin-top: 32px; width: 100%; max-width: 680px; }
+.ask-item { display: flex; align-items: flex-start; gap: 16px; background: #1c1c1c; border: 1px solid #2a2a2a; border-radius: 12px; padding: 18px 22px; }
+.ask-num { font-size: 13px; font-weight: 700; color: #4a90d9; min-width: 24px; }
+.ask-text { font-size: 14px; color: #ccc; line-height: 1.5; }
+.ask-text strong { color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- 1: COVER -->
+  <div class="slide active">
+    <div class="cover-wrap">
+      <div class="cover-badge">IBM Capstone · Shark Tank 2025</div>
+      <div class="cover-title">PitchPerfect</div>
+      <div class="cover-sub">The IBM Golden Standard Proposal System</div>
+      <div class="cover-team">Asia Demmer &nbsp;·&nbsp; Matt DeAnzeris &nbsp;·&nbsp; Gresha Kathayat</div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>Team Mercedes-AMG</span></div>
+  </div>
+
+  <!-- 2: POLL INTRO — 73 sellers -->
+  <div class="slide">
+    <div class="slide-label">Voice of the Seller</div>
+    <div style="text-align:center;">
+      <div style="font-size:72px;font-weight:700;color:#fff;letter-spacing:-0.03em;line-height:1;">73 IBM Sellers.</div>
+      <div style="font-size:72px;font-weight:300;color:#4a90d9;letter-spacing:-0.03em;line-height:1.1;margin-bottom:28px;">One Survey.</div>
+      <div style="font-size:18px;font-weight:300;color:#555;max-width:520px;margin:0 auto;line-height:1.6;">We sat down with sellers across the NA Horizon Market and asked one simple question — what's actually broken?</div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>02</span></div>
+  </div>
+
+  <!-- 3: POLL STATS -->
+  <div class="slide">
+    <div class="slide-label">What They Told Us</div>
+    <div style="display:flex;gap:20px;justify-content:center;width:100%;max-width:920px;margin-top:8px;">
+      <div style="flex:1;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:16px;padding:32px 24px;text-align:center;">
+        <div style="font-size:64px;font-weight:800;color:#c0392b;line-height:1;">82%</div>
+        <div style="font-size:13px;color:#ccc;line-height:1.6;margin-top:12px;">have <strong style="color:#fff;">no standardized template</strong> — every proposal built from a blank page</div>
+        <div style="font-size:10px;color:#555;margin-top:8px;font-style:italic;">60 of 73 respondents</div>
+      </div>
+      <div style="flex:1;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:16px;padding:32px 24px;text-align:center;">
+        <div style="font-size:64px;font-weight:800;color:#4a90d9;line-height:1;">55%</div>
+        <div style="font-size:13px;color:#ccc;line-height:1.6;margin-top:12px;">submitted a proposal they were <strong style="color:#fff;">not satisfied with</strong> due to time pressure</div>
+        <div style="font-size:10px;color:#555;margin-top:8px;font-style:italic;">40 of 73 respondents</div>
+      </div>
+      <div style="flex:1;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:16px;padding:32px 24px;text-align:center;">
+        <div style="font-size:64px;font-weight:800;color:#7c5cd8;line-height:1;">51%</div>
+        <div style="font-size:13px;color:#ccc;line-height:1.6;margin-top:12px;">had a client <strong style="color:#fff;">interrupt mid-proposal</strong> — wrong audience or redundant content</div>
+        <div style="font-size:10px;color:#555;margin-top:8px;font-style:italic;">37 of 73 respondents</div>
+      </div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>03 · n=73, NA Horizon Market</span></div>
+  </div>
+
+  <!-- 4: NOT A SELLER PROBLEM -->
+  <div class="slide">
+    <div class="quote-card" style="background:#111;border:1px solid #222;">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#4a90d9;margin-bottom:24px;">The Insight</div>
+      <div style="font-size:42px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:12px;">Not a seller problem.</div>
+      <div style="font-size:42px;font-weight:300;color:#888;line-height:1.2;">A system problem.</div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>04</span></div>
+  </div>
+
+  <!-- 5: $50M STAT -->
+  <div class="slide">
+    <div class="slide-label">Pipeline Impact</div>
+    <div class="big-stat">$56M</div>
+    <div class="stat-label-text">stuck at Engage — out of $106M pipeline</div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>05</span></div>
+  </div>
+
+  <!-- 6: CEO QUOTE -->
+  <div class="slide">
+    <div class="slide-label">The Problem</div>
+    <div class="quote-card">
+      <div class="quote-text">"Our execution was not there. This traces back to how sellers engage clients before a decision is made."</div>
+      <div class="quote-attr">— Arvind Krishna, IBM CEO</div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>06</span></div>
+  </div>
+
+  <!-- 7: VOICE OF THE CUSTOMER — BROADRIDGE -->
+  <div class="slide">
+    <div style="width:100%;max-width:960px;display:flex;flex-direction:column;gap:22px;">
+
+      <div>
+        <div class="slide-label" style="text-align:left;">Customer Feedback</div>
+        <div style="font-size:26px;font-weight:700;color:#fff;line-height:1.1;">Voice of the Customer — Broadridge</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:44px;height:44px;border-radius:50%;background:#4a2fa0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;">HF</div>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#fff;">Howard Freedman</div>
+            <div style="font-size:12px;color:#555;margin-top:2px;">VP of Procurement · Broadridge Financial Solutions · IBM Client</div>
+          </div>
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#4a90d9;background:rgba(74,144,217,0.1);border:1px solid rgba(74,144,217,0.25);border-radius:20px;padding:5px 14px;letter-spacing:0.04em;">Direct Client Input · June 2026</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:20px;align-items:center;">
+
+        <div style="border-radius:14px;padding:22px 24px;background:rgba(192,57,43,0.06);border:1px solid rgba(192,57,43,0.25);">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <span style="font-size:14px;color:#e74c3c;">✗</span>
+            <span style="font-size:10px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#e74c3c;">What IBM Proposals Are Getting Wrong</span>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e74c3c;flex-shrink:0;">1</div><div style="font-size:13px;color:#fff;font-weight:700;">Value is buried</div></div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e74c3c;flex-shrink:0;">2</div><div style="font-size:13px;color:#fff;font-weight:700;">Too long</div></div>
+          <div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e74c3c;flex-shrink:0;">3</div><div style="font-size:13px;color:#fff;font-weight:700;">Wrong language</div></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;"><div style="width:20px;height:20px;border-radius:50%;background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#e74c3c;flex-shrink:0;">4</div><div style="font-size:13px;color:#fff;font-weight:700;">Text overload</div></div>
+        </div>
+
+        <div style="background:#111;border:1px solid #222;border-radius:16px;padding:32px 36px;">
+          <div style="font-size:52px;color:#4a90d9;line-height:0.6;margin-bottom:16px;opacity:0.5;">"</div>
+          <div style="font-size:18px;font-style:italic;color:#ddd;line-height:1.8;">Benefits get <strong style="color:#fff;font-style:normal;">lost in the deck.</strong> Executives don't have time for entire decks — IBM needs to use <strong style="color:#fff;font-style:normal;">the client's vernacular.</strong></div>
+          <div style="margin-top:20px;padding-top:14px;border-top:1px solid #1e1e1e;">
+            <div style="font-size:14px;font-weight:700;color:#fff;">Howard Freedman</div>
+            <div style="font-size:11px;color:#4a90d9;margin-top:3px;">VP of Procurement · Broadridge Financial Solutions · IBM Client</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>07</span></div>
+  </div>
+
+  <!-- 8: PROBLEM STATEMENT -->
+  <div class="slide">
+    <div class="slide-label">Problem Statement</div>
+    <div class="problem-wrap">
+      <div class="problem-card">
+        <div class="problem-card-label">Root Cause</div>
+        <p>Sellers lack <span>enough client context</span> to build value-driven one-pagers and proposals. Without the right information, deliverables stay generic.</p>
+        <p>The result: <span>half the pipeline sits stuck at Engage</span>, stalled before a decision is ever made.</p>
+        <div class="isc-note"><span>⚠</span><span>No visibility into client vernacular — sellers can't target their pain points or communicate effectively with them</span></div>
+      </div>
+      <div class="stats-col">
+        <div class="stat-row"><div class="stat-num">~50%</div><div class="stat-desc">of pipeline stuck at Engage — $50M stalled before close</div></div>
+        <div class="stat-row"><div class="stat-num">58%</div><div class="stat-desc">can't articulate ROI or differentiate IBM to the client</div></div>
+        <div class="stat-row"><div class="stat-num">74%</div><div class="stat-desc">reinvent every proposal from scratch — no client data, no standard</div></div>
+      </div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>08</span></div>
+  </div>
+
+  <!-- 9: SOLUTION PILLARS -->
+  <div class="slide">
+    <div class="slide-label">The Solution</div>
+    <div class="slide-title" style="font-size:34px;margin-bottom:32px;">IBM PitchPerfect &nbsp;·&nbsp; <strong>Learn. Create. Validate.</strong></div>
+    <div class="pillars-grid">
+      <div class="pillar"><div class="pillar-num">01 — LEARN</div><div class="pillar-title">Know Before You Go</div><div class="pillar-desc">Client context, industry priorities, and IBM Hall of Fame proposals — surfaced before the meeting starts. ISC data made accessible and actionable.</div></div>
+      <div class="pillar"><div class="pillar-num">02 — CREATE</div><div class="pillar-title">Build in Minutes</div><div class="pillar-desc">Input BVA docs and opportunity details. Receive a filled-in, client-specific one-pager or full proposal — generated by AI, refined in chat.</div></div>
+      <div class="pillar"><div class="pillar-num">03 — VALIDATE</div><div class="pillar-title">Know It's Good</div><div class="pillar-desc">5-dimension scoring rubric + AI coach reviews every proposal before it reaches the client. IBM's best becomes the floor, not the ceiling.</div></div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>09</span></div>
+  </div>
+
+  <!-- 9: GOLDEN STANDARD -->
+  <div class="slide">
+    <div class="golden-wrap">
+      <div>
+        <div class="slide-label" style="text-align:left;">The Golden Standard</div>
+        <div class="gtitle">IBM sellers lack a fast, <strong>standardized</strong> way to create client-specific proposals.</div>
+        <div class="gdesc">PitchPerfect closes that gap — connecting client data, IBM knowledge, and quality assurance into a single seller workflow.</div>
+      </div>
+      <div class="golden-steps">
+        <div class="gstep"><div class="gstep-num">01</div><div><div class="gstep-title">Cover Page</div><div class="gstep-desc">Branded, client-specific opener</div></div></div>
+        <div class="gstep"><div class="gstep-num">02</div><div><div class="gstep-title">Executive Summary</div><div class="gstep-desc">CRA, ROI, client vernacular, stakeholders</div></div></div>
+        <div class="gstep"><div class="gstep-num">03</div><div><div class="gstep-title">Why IBM</div><div class="gstep-desc">Technical advantage vs alternative</div></div></div>
+        <div class="gstep"><div class="gstep-num">04</div><div><div class="gstep-title">BVA</div><div class="gstep-desc">Business value assessment — Value 360</div></div></div>
+        <div class="gstep"><div class="gstep-num">05</div><div><div class="gstep-title">Price &amp; Value Added</div><div class="gstep-desc">Expiration date, confidence in closing</div></div></div>
+      </div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>10</span></div>
+  </div>
+
+  <!-- 11: SCORING RUBRIC -->
+  <div class="slide">
+    <div class="slide-label">Validate</div>
+    <div class="slide-title" style="font-size:36px;margin-bottom:28px;">5-Dimension <strong>Scoring Rubric</strong></div>
+    <div class="rubric-grid">
+      <div class="rubric-row"><div class="rubric-weight">30%</div><div class="rubric-name">Structural Completeness</div><div class="rubric-desc">All required sections present and logically sequenced. Problem → recommendation → value → next steps.</div></div>
+      <div class="rubric-row"><div class="rubric-weight">25%</div><div class="rubric-name">Content Quality</div><div class="rubric-desc">Specific, client-relevant claims — not generic portfolio language. Clear IBM recommendation and value prop.</div></div>
+      <div class="rubric-row"><div class="rubric-weight">20%</div><div class="rubric-name">Executive Summary</div><div class="rubric-desc">Leads with client problem; clear IBM recommendation and business impact in the first section.</div></div>
+      <div class="rubric-row"><div class="rubric-weight">15%</div><div class="rubric-name">ROI Clarity</div><div class="rubric-desc">Quantified value, cost of delay, and compelling reason to act — tied to the client's business.</div></div>
+      <div class="rubric-row"><div class="rubric-weight">10%</div><div class="rubric-name">Visual Presentation</div><div class="rubric-desc">Clean, branded, audience-appropriate. Pass: 70/100 &nbsp;|&nbsp; Hall of Fame: 90+</div></div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>11</span></div>
+  </div>
+
+  <!-- 12: BVA CALCULATOR -->
+  <div class="slide">
+    <div style="text-align:center;max-width:620px;">
+      <div class="slide-label">Business Value Assessment</div>
+      <div class="slide-title" style="font-size:42px;margin-bottom:16px;"><strong>BVA Calculator</strong></div>
+      <div style="font-size:16px;font-weight:300;color:#888;line-height:1.6;margin-bottom:40px;">Interactive pipeline acceleration model — enter your numbers, see the incremental revenue impact across five adoption scenarios.</div>
+      <div style="display:flex;flex-direction:column;gap:14px;align-items:center;">
+        <a href="bva-calculator.html" target="_blank" style="display:inline-flex;align-items:center;gap:10px;background:#4a90d9;color:#fff;font-size:15px;font-weight:700;padding:14px 36px;border-radius:8px;text-decoration:none;letter-spacing:0.04em;">&#9654; Open BVA Calculator</a>
+        <div style="font-size:12px;color:#444;">Opens in a new tab · Live interactive calculator</div>
+      </div>
+      <div style="display:flex;gap:24px;justify-content:center;margin-top:44px;">
+        <div style="text-align:center;">
+          <div style="font-size:28px;font-weight:700;color:#4a90d9;">$42.5M</div>
+          <div style="font-size:11px;color:#555;margin-top:4px;">Transformational upside</div>
+        </div>
+        <div style="width:1px;background:#1e1e1e;"></div>
+        <div style="text-align:center;">
+          <div style="font-size:28px;font-weight:700;color:#7c5cd8;">$17M</div>
+          <div style="font-size:11px;color:#555;margin-top:4px;">Strong adoption scenario</div>
+        </div>
+        <div style="width:1px;background:#1e1e1e;"></div>
+        <div style="text-align:center;">
+          <div style="font-size:28px;font-weight:700;color:#27ae60;">$3.4M</div>
+          <div style="font-size:11px;color:#555;margin-top:4px;">Pilot scenario floor</div>
+        </div>
+      </div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>12</span></div>
+  </div>
+
+  <!-- 13: THE ASK -->
+  <div class="slide">
+    <div class="slide-label">The Ask</div>
+    <div class="slide-title" style="font-size:44px;">Support us to <strong>ship this.</strong></div>
+    <div class="ask-items">
+      <div class="ask-item"><div class="ask-num">01</div><div class="ask-text"><strong>Executive Shark Sponsorship</strong> — ongoing sponsorship throughout the year to drive adoption and visibility</div></div>
+      <div class="ask-item"><div class="ask-num">02</div><div class="ask-text"><strong>CIO Office Integration</strong> — work with the CIO office for future integration and a watsonx workshop</div></div>
+      <div class="ask-item"><div class="ask-num">03</div><div class="ask-text"><strong>Path to Production</strong> — engage our team throughout the year to move PitchPerfect into a production IBM tool</div></div>
+    </div>
+    <div class="slide-footer"><span>IBM Confidential</span><span>13</span></div>
+  </div>
+
+</div>
+
+<nav class="navbar">
+  <div class="nav-brand">IBM PitchPerfect</div>
+  <div class="nav-dots" id="dots"></div>
+  <div class="nav-controls">
+    <button class="nav-btn" id="prevBtn" disabled>&#8592;</button>
+    <span class="nav-counter" id="counter">1 / 8</span>
+    <button class="nav-btn" id="nextBtn">&#8594;</button>
+  </div>
+</nav>
+
+<div class="bob">Made with IBM Bob</div>
+
+<script>
+var slides = document.querySelectorAll('.slide');
+var total = slides.length;
+var cur = 0;
+var dotsEl = document.getElementById('dots');
+var counter = document.getElementById('counter');
+var prevBtn = document.getElementById('prevBtn');
+var nextBtn = document.getElementById('nextBtn');
+
+for (var i = 0; i < total; i++) {
+  var d = document.createElement('button');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.setAttribute('data-i', i);
+  d.addEventListener('click', function() { goTo(+this.getAttribute('data-i')); });
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  slides[cur].classList.remove('active');
+  dotsEl.children[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(total - 1, n));
+  slides[cur].classList.add('active');
+  dotsEl.children[cur].classList.add('active');
+  counter.textContent = (cur + 1) + ' / ' + total;
+  prevBtn.disabled = cur === 0;
+  nextBtn.disabled = cur === total - 1;
+}
+
+prevBtn.addEventListener('click', function() { goTo(cur - 1); });
+nextBtn.addEventListener('click', function() { goTo(cur + 1); });
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(cur + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goTo(cur - 1);
+});
+</script>
+</body>
+</html>

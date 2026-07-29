@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bob Propel — Interactive BVA Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: #f7f8fa;
+    color: #1f2328;
+    padding: 28px 20px 56px;
+  }
+  .page { max-width: 820px; margin: 0 auto; }
+
+  /* Header */
+  .header { margin-bottom: 20px; }
+  .header-row { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .header h1 { font-size: 21px; font-weight: 700; color: #1f2328; letter-spacing: -0.3px; }
+  .header .subtitle { font-size: 13px; color: #57606a; margin-top: 2px; }
+  .tag {
+    display: inline-block; background: #eef2ff; color: #3b82d4;
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 3px;
+    letter-spacing: 0.4px; text-transform: uppercase;
+  }
+  .tag-live {
+    display: inline-block; background: #f0fdf4; color: #0d7a5f;
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 3px;
+    letter-spacing: 0.4px; text-transform: uppercase; margin-left: 6px;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: #57606a;
+    margin: 24px 0 10px; padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  /* Card */
+  .card {
+    background: #fff; border: 1px solid #e5e7eb;
+    border-radius: 8px; padding: 18px 20px; margin-bottom: 12px;
+  }
+
+  /* Input grid */
+  .inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .input-group label {
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: #57606a; margin-bottom: 5px;
+  }
+  .input-row { display: flex; align-items: center; }
+  .input-prefix, .input-suffix {
+    background: #f7f8fa; border: 1px solid #d1d5db;
+    padding: 7px 10px; font-size: 13px; font-weight: 600; color: #57606a; line-height: 1;
+    flex-shrink: 0;
+  }
+  .input-prefix { border-right: none; border-radius: 5px 0 0 5px; }
+  .input-suffix { border-left: none; border-radius: 0 5px 5px 0; }
+  .input-row input[type="number"] {
+    border: 1px solid #d1d5db; border-radius: 0;
+    padding: 7px 10px; font-size: 14px; font-weight: 600;
+    color: #1f2328; width: 100%; outline: none; background: #fff;
+    -moz-appearance: textfield;
+  }
+  .input-row input[type="number"]:focus {
+    border-color: #3b82d4;
+    box-shadow: 0 0 0 2px rgba(59,130,212,0.15);
+    position: relative; z-index: 1;
+  }
+  .input-row input[type="number"]::-webkit-inner-spin-button,
+  .input-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .input-hint { font-size: 11px; color: #9ca3af; margin-top: 3px; }
+
+  /* Scenario rate inputs */
+  .scenario-rates { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 4px; }
+  .rate-group label {
+    display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .rate-b label { color: #60a5fa; }
+  .rate-c label { color: #3b82d4; }
+  .rate-d label { color: #7c5cd8; }
+  .rate-e label { color: #0d7a5f; }
+
+  /* Results grid */
+  .results-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .result-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+  .result-header {
+    padding: 8px 10px; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px; color: #fff; line-height: 1.3;
+  }
+  .rh-a { background: #9ca3af; }
+  .rh-b { background: #60a5fa; }
+  .rh-c { background: #3b82d4; }
+  .rh-d { background: #7c5cd8; }
+  .rh-e { background: #0d7a5f; }
+  .result-body { padding: 10px; }
+  .result-body .rlabel {
+    font-size: 9px; color: #57606a; text-transform: uppercase;
+    letter-spacing: 0.4px; margin-top: 7px; margin-bottom: 1px;
+  }
+  .result-body .rlabel:first-child { margin-top: 0; }
+  .result-body .rval { font-size: 14px; font-weight: 700; }
+  .rval-gray   { color: #9ca3af; }
+  .rval-ltblue { color: #60a5fa; }
+  .rval-blue   { color: #3b82d4; }
+  .rval-purple { color: #7c5cd8; }
+  .rval-green  { color: #0d7a5f; }
+  .result-body .rnote { font-size: 10px; color: #9ca3af; margin-top: 6px; line-height: 1.4; }
+
+  /* Wow box */
+  .wow-box {
+    background: #f0fdf4; border: 1.5px solid #0d7a5f;
+    border-radius: 8px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 20px;
+  }
+  .wow-number { font-size: 38px; font-weight: 800; color: #0d7a5f; line-height: 1; white-space: nowrap; min-width: 140px; }
+  .wow-text h3 { font-size: 13px; font-weight: 700; color: #1f2328; margin-bottom: 3px; }
+  .wow-text p { font-size: 12px; color: #57606a; line-height: 1.5; }
+
+  /* Pipeline stages */
+  .pipeline-bar {
+    display: flex; border-radius: 6px; overflow: hidden; height: 38px;
+    border: 1px solid #e5e7eb; margin-bottom: 6px;
+  }
+  .ps {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: #fff; padding: 0 6px; white-space: nowrap;
+  }
+  .ps-qualify   { background: #9ca3af; width: 16%; }
+  .ps-design    { background: #6b7280; width: 16%; }
+  .ps-propose   { background: #3b82d4; width: 18%; }
+  .ps-negotiate { background: #2563eb; width: 16%; }
+  .ps-closing   { background: #7c5cd8; width: 16%; }
+  .ps-closed    { background: #0d7a5f; width: 18%; }
+  .stage-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: #57606a; margin-top: 4px; }
+  .sl-item { display: flex; align-items: center; gap: 4px; }
+  .sl-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Chart */
+  .chart-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px 20px; }
+  .chart-card svg { display: block; width: 100%; }
+  .chart-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11px; color: #57606a; margin-top: 10px; }
+  .chart-legend-item { display: flex; align-items: center; gap: 5px; }
+  .chart-legend-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+  /* Summary table */
+  .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: #f7f8fa; font-weight: 600; text-align: left; padding: 8px 12px;
+    border-bottom: 2px solid #e5e7eb; color: #57606a; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  .tr-highlight td { background: #f0fdf4; }
+  .tr-a td { color: #9ca3af; }
+
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
+  footer {
+    margin-top: 36px; padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    text-align: center; font-size: 11px; color: #9ca3af;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <h1>Bob Propel</h1>
+        <div class="subtitle">Business Value Assessment · Pipeline Acceleration Calculator</div>
+      </div>
+      <div>
+        <span class="tag">IBM Confidential</span>
+        <span class="tag-live">&#9998; Live Calculator</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline Stages -->
+  <div class="section-label">Sales Pipeline Stages</div>
+  <div class="card" style="padding:14px 18px;">
+    <div class="pipeline-bar">
+      <div class="ps ps-qualify">Qualify</div>
+      <div class="ps ps-design">Design</div>
+      <div class="ps ps-propose">Propose</div>
+      <div class="ps ps-negotiate">Negotiate</div>
+      <div class="ps ps-closing">Closing</div>
+      <div class="ps ps-closed">Closed</div>
+    </div>
+    <div class="stage-legend">
+      <div class="sl-item"><div class="sl-dot" style="background:#9ca3af"></div>Qualify+ = All except Closed</div>
+      <div class="sl-item"><div class="sl-dot" style="background:#3b82d4"></div>Upside = Propose + Negotiate</div>
+      <div class="sl-item"><div class="sl-dot" style="background:#7c5cd8"></div>Call = Closing</div>
+      <div class="sl-item"><div class="sl-dot" style="background:#0d7a5f"></div>Won = Closed</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Pipeline Inputs -->
+  <div class="section-label">Step 1 — Enter Pipeline Inputs</div>
+  <div class="card">
+    <div class="inputs-grid">
+      <div class="input-group">
+        <label>Q3 Total Active Pipeline (Qualify+)</label>
+        <div class="input-row">
+          <span class="input-prefix">$</span>
+          <input type="number" id="q3Total" value="106" min="0" step="1">
+          <span class="input-suffix">M</span>
+        </div>
+        <div class="input-hint">All active opportunities excluding Closed</div>
+      </div>
+      <div class="input-group">
+        <label>Q3 Budget Target</label>
+        <div class="input-row">
+          <span class="input-prefix">$</span>
+          <input type="number" id="q3Budget" value="77" min="0" step="1">
+          <span class="input-suffix">M</span>
+        </div>
+        <div class="input-hint">Current quarterly revenue target</div>
+      </div>
+      <div class="input-group">
+        <label>Q3 Stuck Pipeline (Qualify + Design)</label>
+        <div class="input-row">
+          <span class="input-prefix">$</span>
+          <input type="number" id="q3Stuck" value="50" min="0" step="1">
+          <span class="input-suffix">M</span>
+        </div>
+        <div class="input-hint">Earliest-stage deals — most at risk of stalling</div>
+      </div>
+      <div class="input-group">
+        <label>Q4 Total Pipeline (Forward Look)</label>
+        <div class="input-row">
+          <span class="input-prefix">$</span>
+          <input type="number" id="q4Total" value="158" min="0" step="1">
+          <span class="input-suffix">M</span>
+        </div>
+        <div class="input-hint">Projected Q4 pipeline entering the quarter</div>
+      </div>
+      <div class="input-group">
+        <label>Q4 Lower-Stage Pipeline (Qualify + Design)</label>
+        <div class="input-row">
+          <span class="input-prefix">$</span>
+          <input type="number" id="q4Stuck" value="120" min="0" step="1">
+          <span class="input-suffix">M</span>
+        </div>
+        <div class="input-hint">Q4 deals at risk of not advancing in time</div>
+      </div>
+      <div class="input-group">
+        <label>Q4 Budget Target</label>
+        <div class="input-row">
+          <span class="input-prefix">$</span>
+          <input type="number" id="q4Budget" value="77" min="0" step="1">
+          <span class="input-suffix">M</span>
+        </div>
+        <div class="input-hint">Q4 revenue target</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Scenario Rates -->
+  <div class="section-label">Step 2 — Adjust Acceleration Rates per Scenario</div>
+  <div class="card">
+    <p style="font-size:12px;color:#57606a;margin-bottom:12px;">
+      Each rate is the % of stuck/lower-stage pipeline that Bob Propel accelerates into the next deal stage within the quarter.
+    </p>
+    <div class="scenario-rates">
+      <div class="rate-group rate-b">
+        <label>B — Pilot</label>
+        <div class="input-row">
+          <input type="number" id="rateB" value="2" min="0" max="100" step="0.5">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+      <div class="rate-group rate-c">
+        <label>C — Best Case</label>
+        <div class="input-row">
+          <input type="number" id="rateC" value="4" min="0" max="100" step="0.5">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+      <div class="rate-group rate-d">
+        <label>D — Strong</label>
+        <div class="input-row">
+          <input type="number" id="rateD" value="10" min="0" max="100" step="1">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+      <div class="rate-group rate-e">
+        <label>E — Transformational</label>
+        <div class="input-row">
+          <input type="number" id="rateE" value="25" min="0" max="100" step="1">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Results -->
+  <div class="section-label">Live Results — Incremental Revenue Impact</div>
+  <div class="results-grid">
+    <div class="result-card">
+      <div class="result-header rh-a">A — Do Nothing</div>
+      <div class="result-body">
+        <div class="rlabel">Acceleration</div>
+        <div class="rval rval-gray">0%</div>
+        <div class="rlabel">Q3 Budget</div>
+        <div class="rval rval-gray" id="res-a-budget">$77M</div>
+        <div class="rlabel">Incremental</div>
+        <div class="rval rval-gray">$0</div>
+        <div class="rlabel">EOY Total</div>
+        <div class="rval rval-gray">$0</div>
+        <div class="rnote">Hit target. No upside captured.</div>
+      </div>
+    </div>
+    <div class="result-card">
+      <div class="result-header rh-b">B — Pilot</div>
+      <div class="result-body">
+        <div class="rlabel">Acceleration</div>
+        <div class="rval rval-ltblue" id="res-b-rate">2%</div>
+        <div class="rlabel">Q3 Unlocked</div>
+        <div class="rval rval-ltblue" id="res-b-q3">+$1.0M</div>
+        <div class="rlabel">Q4 Unlocked</div>
+        <div class="rval rval-ltblue" id="res-b-q4">+$2.4M</div>
+        <div class="rlabel">EOY Impact</div>
+        <div class="rval rval-ltblue" id="res-b-eoy">+$3.4M</div>
+        <div class="rnote">Platform pays for itself in Q1.</div>
+      </div>
+    </div>
+    <div class="result-card">
+      <div class="result-header rh-c">C — Best Case</div>
+      <div class="result-body">
+        <div class="rlabel">Acceleration</div>
+        <div class="rval rval-blue" id="res-c-rate">4%</div>
+        <div class="rlabel">Q3 Unlocked</div>
+        <div class="rval rval-blue" id="res-c-q3">+$2.0M</div>
+        <div class="rlabel">Q4 Unlocked</div>
+        <div class="rval rval-blue" id="res-c-q4">+$4.8M</div>
+        <div class="rlabel">EOY Impact</div>
+        <div class="rval rval-blue" id="res-c-eoy">+$6.8M</div>
+        <div class="rnote">Full Learn + Create + Validate active.</div>
+      </div>
+    </div>
+    <div class="result-card">
+      <div class="result-header rh-d">D — Strong</div>
+      <div class="result-body">
+        <div class="rlabel">Acceleration</div>
+        <div class="rval rval-purple" id="res-d-rate">10%</div>
+        <div class="rlabel">Q3 Unlocked</div>
+        <div class="rval rval-purple" id="res-d-q3">+$5.0M</div>
+        <div class="rlabel">Q4 Unlocked</div>
+        <div class="rval rval-purple" id="res-d-q4">+$12.0M</div>
+        <div class="rlabel">EOY Impact</div>
+        <div class="rval rval-purple" id="res-d-eoy">+$17.0M</div>
+        <div class="rnote">Tool becomes habit. Cycles compress.</div>
+      </div>
+    </div>
+    <div class="result-card">
+      <div class="result-header rh-e">E — Transform</div>
+      <div class="result-body">
+        <div class="rlabel">Acceleration</div>
+        <div class="rval rval-green" id="res-e-rate">25%</div>
+        <div class="rlabel">Q3 Unlocked</div>
+        <div class="rval rval-green" id="res-e-q3">+$12.5M</div>
+        <div class="rlabel">Q4 Unlocked</div>
+        <div class="rval rval-green" id="res-e-q4">+$30.0M</div>
+        <div class="rlabel">EOY Impact</div>
+        <div class="rval rval-green" id="res-e-eoy">+$42.5M</div>
+        <div class="rnote">Hall of Fame = the IBM standard.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Wow Box -->
+  <div class="section-label">Transformational Ceiling</div>
+  <div class="wow-box">
+    <div class="wow-number" id="wow-number">+$42.5M</div>
+    <div class="wow-text">
+      <h3 id="wow-headline">Incremental EOY Revenue at 25% — Pipeline You Already Own</h3>
+      <p id="wow-body">$77M budget becomes $89.5M in Q3, with $30.0M more unlocked in Q4. Same sellers. Same pipeline. The only variable is proposal quality.</p>
+    </div>
+  </div>
+
+  <!-- Bar Chart -->
+  <div class="section-label">Incremental Revenue by Scenario</div>
+  <div class="chart-card">
+    <svg id="barChart" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" style="overflow:visible;"></svg>
+    <div class="chart-legend">
+      <div class="chart-legend-item">
+        <div class="chart-legend-dot" style="background:#3b82d4"></div>Q3 Stuck Pipeline Unlocked
+      </div>
+      <div class="chart-legend-item">
+        <div class="chart-legend-dot" style="background:#93c5fd"></div>Q4 Lower-Stage Unlocked
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Table -->
+  <div class="section-label">ROI Summary Table</div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Rate</th>
+          <th>Q3 Unlocked</th>
+          <th>Q4 Unlocked</th>
+          <th>EOY Impact</th>
+          <th>Budget → Outcome</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="tr-a">
+          <td>A — Do Nothing</td>
+          <td>0%</td>
+          <td>$0</td>
+          <td>$0</td>
+          <td>$0</td>
+          <td id="tbl-a-outcome">$77M → $77M</td>
+        </tr>
+        <tr>
+          <td>B — Pilot</td>
+          <td id="tbl-b-rate">2%</td>
+          <td id="tbl-b-q3">+$1.0M</td>
+          <td id="tbl-b-q4">+$2.4M</td>
+          <td style="color:#60a5fa;font-weight:700;" id="tbl-b-eoy">+$3.4M</td>
+          <td id="tbl-b-outcome">$77M → $78.0M</td>
+        </tr>
+        <tr>
+          <td>C — Best Case</td>
+          <td id="tbl-c-rate">4%</td>
+          <td id="tbl-c-q3">+$2.0M</td>
+          <td id="tbl-c-q4">+$4.8M</td>
+          <td style="color:#3b82d4;font-weight:700;" id="tbl-c-eoy">+$6.8M</td>
+          <td id="tbl-c-outcome">$77M → $79.0M</td>
+        </tr>
+        <tr>
+          <td>D — Strong Adoption</td>
+          <td id="tbl-d-rate">10%</td>
+          <td id="tbl-d-q3">+$5.0M</td>
+          <td id="tbl-d-q4">+$12.0M</td>
+          <td style="color:#7c5cd8;font-weight:700;" id="tbl-d-eoy">+$17.0M</td>
+          <td id="tbl-d-outcome">$77M → $82.0M</td>
+        </tr>
+        <tr class="tr-highlight">
+          <td><strong>E — Transformational</strong></td>
+          <td id="tbl-e-rate"><strong>25%</strong></td>
+          <td id="tbl-e-q3"><strong>+$12.5M</strong></td>
+          <td id="tbl-e-q4"><strong>+$30.0M</strong></td>
+          <td style="color:#0d7a5f;font-weight:700;" id="tbl-e-eoy"><strong>+$42.5M</strong></td>
+          <td id="tbl-e-outcome"><strong>$77M → $89.5M</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer style="margin-top:36px;padding-top:12px;border-top:1px solid #e5e7eb;text-align:center;font-size:11px;color:#9ca3af;">
+  Made with IBM Bob &nbsp;·&nbsp; Bob Propel BVA Calculator &nbsp;·&nbsp; IBM Confidential
+</footer>
+
+<script>
+  // ── Formatting helpers ──────────────────────────────────────────
+  function fmtM(val) {
+    // Format as $X.XM with sensible decimal places
+    if (val === 0) return '$0';
+    var abs = Math.abs(val);
+    var dec = abs < 1 ? 2 : abs < 10 ? 1 : 0;
+    return (val > 0 ? '+' : '') + '$' + val.toFixed(dec) + 'M';
+  }
+  function fmtMPlain(val) {
+    var abs = Math.abs(val);
+    var dec = abs < 1 ? 2 : abs < 10 ? 1 : 0;
+    return '$' + val.toFixed(dec) + 'M';
+  }
+  function fmtPct(val) {
+    return (val % 1 === 0 ? val.toFixed(0) : val.toFixed(1)) + '%';
+  }
+  function n(id) {
+    return parseFloat(document.getElementById(id).value) || 0;
+  }
+
+  // ── Main recalculation ──────────────────────────────────────────
+  function recalc() {
+    var q3Budget = n('q3Budget');
+    var q3Stuck  = n('q3Stuck');
+    var q4Budget = n('q4Budget');
+    var q4Stuck  = n('q4Stuck');
+
+    var rB = n('rateB') / 100;
+    var rC = n('rateC') / 100;
+    var rD = n('rateD') / 100;
+    var rE = n('rateE') / 100;
+
+    var rates   = [rB, rC, rD, rE];
+    var ids     = ['b', 'c', 'd', 'e'];
+    var rawRates = [n('rateB'), n('rateC'), n('rateD'), n('rateE')];
+
+    var q3vals  = rates.map(function(r) { return q3Stuck * r; });
+    var q4vals  = rates.map(function(r) { return q4Stuck * r; });
+    var eoyvals = q3vals.map(function(v, i) { return v + q4vals[i]; });
+
+    // Scenario A
+    document.getElementById('res-a-budget').textContent = fmtMPlain(q3Budget);
+    document.getElementById('tbl-a-outcome').textContent =
+      fmtMPlain(q3Budget) + ' → ' + fmtMPlain(q3Budget);
+
+    // Scenarios B–E
+    ids.forEach(function(s, i) {
+      var rate = rawRates[i];
+      var q3v  = q3vals[i];
+      var q4v  = q4vals[i];
+      var eoyv = eoyvals[i];
+      var bold = s === 'e';
+
+      function set(id, val) {
+        var el = document.getElementById(id);
+        el.innerHTML = bold ? '<strong>' + val + '</strong>' : val;
+      }
+
+      set('res-' + s + '-rate', fmtPct(rate));
+      set('res-' + s + '-q3',   fmtM(q3v));
+      set('res-' + s + '-q4',   fmtM(q4v));
+      set('res-' + s + '-eoy',  fmtM(eoyv));
+
+      set('tbl-' + s + '-rate', fmtPct(rate));
+      set('tbl-' + s + '-q3',   fmtM(q3v));
+      set('tbl-' + s + '-q4',   fmtM(q4v));
+      set('tbl-' + s + '-eoy',  fmtM(eoyv));
+      set('tbl-' + s + '-outcome',
+        fmtMPlain(q3Budget) + ' → ' + fmtMPlain(q3Budget + q3v));
+    });
+
+    // Wow box — always tracks Scenario E
+    var eE  = eoyvals[3];
+    var q3E = q3vals[3];
+    var q4E = q4vals[3];
+    var rateEpct = fmtPct(rawRates[3]);
+
+    document.getElementById('wow-number').textContent = fmtM(eE);
+    document.getElementById('wow-headline').textContent =
+      'Incremental EOY Revenue at ' + rateEpct + ' — Pipeline You Already Own';
+    document.getElementById('wow-body').textContent =
+      fmtMPlain(q3Budget) + ' budget becomes ' + fmtMPlain(q3Budget + q3E) +
+      ' in Q3, with ' + fmtM(q4E) + ' more unlocked in Q4. ' +
+      'Same sellers. Same pipeline. The only variable is proposal quality.';
+
+    // Redraw chart
+    drawChart(q3vals, q4vals, eoyvals, rawRates);
+  }
+
+  // ── SVG Bar Chart ───────────────────────────────────────────────
+  function drawChart(q3vals, q4vals, eoyvals, rawRates) {
+    var svg = document.getElementById('barChart');
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    var W = 700, H = 260;
+    var padL = 54, padR = 20, padTop = 32, padBot = 48;
+    var chartW = W - padL - padR;
+    var chartH = H - padTop - padBot;
+
+    var COLORS_Q3  = ['#e5e7eb', '#60a5fa', '#3b82d4', '#7c5cd8', '#0d7a5f'];
+    var COLORS_Q4  = ['#f3f4f6', '#bfdbfe', '#93c5fd', '#c4b5fd', '#6ee7b7'];
+    var LABEL_CLR  = ['#9ca3af', '#3b82f6', '#2563eb', '#6d28d9', '#065f46'];
+    var xLabels    = ['A / 0%', 'B / ' + fmtPct(rawRates[0]),
+                      'C / ' + fmtPct(rawRates[1]),
+                      'D / ' + fmtPct(rawRates[2]),
+                      'E / ' + fmtPct(rawRates[3])];
+
+    // Compute max for y-scale
+    var maxVal = 1;
+    eoyvals.forEach(function(v) { if (v > maxVal) maxVal = v; });
+    // Nice round ceiling
+    var steps = [1,2,5,10,20,25,50,100,200,250,500];
+    var tickInterval = 1;
+    for (var si = 0; si < steps.length; si++) {
+      if (maxVal / steps[si] <= 6) { tickInterval = steps[si]; break; }
+    }
+    var nice = Math.ceil(maxVal / tickInterval) * tickInterval;
+    if (nice === 0) nice = 10;
+    var numTicks = Math.round(nice / tickInterval);
+
+    // Y-axis grid lines + labels
+    for (var t = 0; t <= numTicks; t++) {
+      var yVal = tickInterval * t;
+      var yPx  = padTop + chartH - (yVal / nice) * chartH;
+
+      var line = makeSVG('line', {
+        x1: padL, x2: W - padR,
+        y1: yPx,  y2: yPx,
+        stroke: t === 0 ? '#d1d5db' : '#f0f0f0',
+        'stroke-width': t === 0 ? '1.5' : '1'
+      });
+      svg.appendChild(line);
+
+      var lbl = makeSVG('text', {
+        x: padL - 6, y: yPx + 4,
+        'text-anchor': 'end',
+        'font-size': '10',
+        fill: '#9ca3af'
+      });
+      lbl.textContent = '$' + yVal.toFixed(0) + 'M';
+      svg.appendChild(lbl);
+    }
+
+    // Bars
+    var n = 5;
+    var groupW = chartW / n;
+    var barW   = Math.min(groupW * 0.55, 72);
+
+    var allVals = [0].concat(eoyvals); // index 0 = scenario A (zero)
+    var allQ3   = [0].concat(q3vals);
+    var allQ4   = [0].concat(q4vals);
+
+    for (var i = 0; i < n; i++) {
+      var cx   = padL + i * groupW + groupW / 2;
+      var bx   = cx - barW / 2;
+      var q3h  = (allQ3[i] / nice) * chartH;
+      var q4h  = (allQ4[i] / nice) * chartH;
+      var totH = q3h + q4h;
+      var minH = 3;
+
+      // Q3 base bar
+      if (allQ3[i] > 0 || i === 0) {
+        var h3 = Math.max(i === 0 ? minH : q3h, i === 0 ? minH : 0);
+        var r3 = makeSVG('rect', {
+          x: bx, y: padTop + chartH - h3,
+          width: barW, height: h3,
+          fill: COLORS_Q3[i], rx: 3
+        });
+        svg.appendChild(r3);
+      }
+
+      // Q4 stacked bar
+      if (allQ4[i] > 0) {
+        var r4 = makeSVG('rect', {
+          x: bx, y: padTop + chartH - q3h - q4h,
+          width: barW, height: q4h,
+          fill: COLORS_Q4[i], rx: 3
+        });
+        svg.appendChild(r4);
+      }
+
+      // Value label above bar
+      if (allVals[i] > 0) {
+        var topY = padTop + chartH - Math.max(totH, minH) - 6;
+        var vtxt = makeSVG('text', {
+          x: cx, y: topY,
+          'text-anchor': 'middle',
+          'font-size': '10',
+          'font-weight': '700',
+          fill: LABEL_CLR[i]
+        });
+        vtxt.textContent = fmtM(allVals[i]);
+        svg.appendChild(vtxt);
+      }
+
+      // X-axis label
+      var xlbl = makeSVG('text', {
+        x: cx, y: padTop + chartH + 16,
+        'text-anchor': 'middle',
+        'font-size': '10',
+        fill: '#57606a'
+      });
+      xlbl.textContent = xLabels[i];
+      svg.appendChild(xlbl);
+    }
+  }
+
+  // ── SVG element factory ────────────────────────────────────────
+  function makeSVG(tag, attrs) {
+    var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.keys(attrs).forEach(function(k) {
+      el.setAttribute(k, attrs[k]);
+    });
+    return el;
+  }
+
+  // ── Wire up all inputs ─────────────────────────────────────────
+  document.querySelectorAll('input[type="number"]').forEach(function(el) {
+    el.addEventListener('input', recalc);
+    el.addEventListener('change', recalc);
+  });
+
+  // ── Initial render ─────────────────────────────────────────────
+  recalc();
+</script>
+</body>
+</html>
